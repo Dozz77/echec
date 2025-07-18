@@ -1,0 +1,71 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Échecs entre amis</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css">
+  <style>
+    body { background: #222; color: #fff; font-family: sans-serif; text-align: center; }
+    #board { width: 400px; margin: auto; }
+    #status { margin-top: 10px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>♟️ Échecs entre amis</h1>
+  <div id="board"></div>
+  <p id="status"></p>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDlZF4Vnaz5cPGN-RyIZxkq__LeP2drcx8",
+      authDomain: "echec-4dede.firebaseapp.com",
+      databaseURL: "https://echec-4dede-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "echec-4dede",
+      storageBucket: "echec-4dede.firebasestorage.app",
+      messagingSenderId: "499585612543",
+      appId: "1:499585612543:web:21032e7136e7cfdbd5aaca",
+      measurementId: "G-RMDL5EKQWB"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const params = new URLSearchParams(window.location.search);
+    const room = params.get("room") || "partie123";
+
+    const game = new Chess();
+    const board = Chessboard('board', {
+      draggable: true,
+      position: 'start',
+      onDrop: (source, target) => {
+        const move = game.move({ from: source, to: target, promotion: 'q' });
+        if (move === null) return 'snapback';
+        db.ref(room).set(game.fen());
+        updateStatus();
+      }
+    });
+
+    function updateStatus() {
+      document.getElementById("status").innerText =
+        game.in_checkmate() ? "Échec et mat!" :
+        game.in_draw() ? "Match nul" :
+        (game.turn() === 'w' ? "Blancs" : "Noirs") + " à jouer";
+    }
+
+    db.ref(room).on('value', (snapshot) => {
+      const fen = snapshot.val();
+      if (fen) {
+        game.load(fen);
+        board.position(fen);
+        updateStatus();
+      }
+    });
+
+    updateStatus();
+  </script>
+</body>
+</html>
